@@ -1,4 +1,4 @@
-package com.example.luna_park_management
+package com.luna.park
 
 import io.flutter.embedding.android.FlutterActivity
 
