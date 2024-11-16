@@ -22,6 +22,12 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('Sign Out'),
             ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/visitorManagement');
+              },
+              child: const Text('Visitor Management'),
+            ),
           ],
         ),
       ),

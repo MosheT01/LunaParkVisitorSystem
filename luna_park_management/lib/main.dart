@@ -5,6 +5,7 @@ import 'package:luna_park_management/admin/admin_dashboard.dart';
 import 'package:luna_park_management/admin/manage_users.dart';
 import 'package:luna_park_management/home_page.dart';
 import 'package:luna_park_management/login_page.dart';
+import 'package:luna_park_management/visitor_management.dart'; // Import the VisitorManagementPage
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +34,8 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomePage(),
         '/admin': (context) => const AdminDashboard(),
         '/manageUsers': (context) => const ManageUsersPage(),
+        '/visitorManagement': (context) =>
+            const VisitorManagementPage(), // Add the new route
       },
     );
   }
