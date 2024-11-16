@@ -22,6 +22,11 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
   final TextEditingController cashierController = TextEditingController();
+  // New Controllers for Edit Dialog
+  final TextEditingController editFirstNameController = TextEditingController();
+  final TextEditingController editLastNameController = TextEditingController();
+  final TextEditingController editNotesController = TextEditingController();
+  final TextEditingController editCashierController = TextEditingController();
 
   File? _selectedImage;
   bool isLoading = false;
@@ -240,10 +245,11 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
   void _showEditDialog(BuildContext context) {
     if (searchResult == null) return;
 
-    firstNameController.text = searchResult!['firstName'] ?? '';
-    lastNameController.text = searchResult!['lastName'] ?? '';
-    notesController.text = searchResult!['notes'] ?? '';
-    cashierController.text = searchResult!['cashier'] ?? '';
+    // Populate Edit Dialog Controllers
+    editFirstNameController.text = searchResult!['firstName'] ?? '';
+    editLastNameController.text = searchResult!['lastName'] ?? '';
+    editNotesController.text = searchResult!['notes'] ?? '';
+    editCashierController.text = searchResult!['cashier'] ?? '';
 
     showDialog(
       context: context,
@@ -294,22 +300,22 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                           ),
                           const SizedBox(height: 16),
                           _buildTextField(
-                            controller: firstNameController,
+                            controller: editFirstNameController,
                             label: 'First Name',
                           ),
                           const SizedBox(height: 8),
                           _buildTextField(
-                            controller: lastNameController,
+                            controller: editLastNameController,
                             label: 'Last Name',
                           ),
                           const SizedBox(height: 8),
                           _buildTextField(
-                            controller: notesController,
+                            controller: editNotesController,
                             label: 'Notes',
                           ),
                           const SizedBox(height: 8),
                           _buildTextField(
-                            controller: cashierController,
+                            controller: editCashierController,
                             label: 'Cashier Name',
                           ),
                           const SizedBox(height: 16),
@@ -337,28 +343,44 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () async {
-                              final imageUrl = _selectedImage != null
-                                  ? await _uploadImage(
-                                      searchResult!['id'],
-                                      searchResult!['timeOfEntry']
-                                          .split(' ')[0],
-                                    )
-                                  : searchResult!['imageUrl'];
-                              await _updateVisitor(imageUrl!);
-                              setState(() {
-                                searchResult!['imageUrl'] = imageUrl;
-                              });
-                              Navigator.of(context).pop(); // Close dialog
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                            ),
-                            child: const Text(
-                              'Save',
-                              style: TextStyle(color: Colors.white),
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () async {
+                                  final imageUrl = _selectedImage != null
+                                      ? await _uploadImage(
+                                          searchResult!['id'],
+                                          searchResult!['timeOfEntry']
+                                              .split(' ')[0],
+                                        )
+                                      : searchResult!['imageUrl'];
+                                  await _updateVisitor(imageUrl!);
+                                  setState(() {
+                                    searchResult!['imageUrl'] = imageUrl;
+                                  });
+                                  Navigator.of(context).pop(); // Close dialog
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                ),
+                                child: const Text(
+                                  'Save',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () =>
+                                    _showDeleteConfirmation(context),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                child: const Text(
+                                  'Delete',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
