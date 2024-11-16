@@ -245,8 +245,6 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
     notesController.text = searchResult!['notes'] ?? '';
     cashierController.text = searchResult!['cashier'] ?? '';
 
-    bool isEditing = false;
-
     showDialog(
       context: context,
       builder: (context) {
@@ -257,107 +255,129 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (searchResult?['imageUrl'] != null)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 16.0),
-                          height: 150,
-                          width: 150,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              searchResult!['imageUrl'],
-                              fit: BoxFit.cover,
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              if (searchResult?['imageUrl'] != null) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => FullScreenImage(
+                                      imageUrl: searchResult!['imageUrl'],
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 16.0),
+                              height: 150,
+                              width: 150,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.white),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  searchResult?['imageUrl'] ?? '',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      const SizedBox(height: 16),
-                      _buildTextField(
-                        controller: firstNameController,
-                        label: 'First Name',
-                        enabled: isEditing,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildTextField(
-                        controller: lastNameController,
-                        label: 'Last Name',
-                        enabled: isEditing,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildTextField(
-                        controller: notesController,
-                        label: 'Notes',
-                        enabled: isEditing,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildTextField(
-                        controller: cashierController,
-                        label: 'Cashier Name',
-                        enabled: isEditing,
-                      ),
-                      const SizedBox(height: 16),
-                      if (isEditing)
-                        TextButton.icon(
-                          onPressed: _pickImage,
-                          icon:
-                              const Icon(Icons.camera_alt, color: Colors.white),
-                          label: const Text(
-                            'Change Picture',
-                            style: TextStyle(color: Colors.white),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: firstNameController,
+                            label: 'First Name',
                           ),
-                        ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+                          const SizedBox(height: 8),
+                          _buildTextField(
+                            controller: lastNameController,
+                            label: 'Last Name',
+                          ),
+                          const SizedBox(height: 8),
+                          _buildTextField(
+                            controller: notesController,
+                            label: 'Notes',
+                          ),
+                          const SizedBox(height: 8),
+                          _buildTextField(
+                            controller: cashierController,
+                            label: 'Cashier Name',
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton.icon(
+                            onPressed: () async {
+                              await _pickImage();
+                              if (_selectedImage != null) {
+                                final imageUrl = await _uploadImage(
+                                  searchResult!['id'],
+                                  searchResult!['timeOfEntry'].split(' ')[0],
+                                );
+                                if (imageUrl != null) {
+                                  await _updateVisitor(imageUrl);
+                                  setState(() {
+                                    searchResult!['imageUrl'] = imageUrl;
+                                  });
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.camera_alt,
+                                color: Colors.white),
+                            label: const Text(
+                              'Change Picture',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           ElevatedButton(
                             onPressed: () async {
-                              if (isEditing) {
-                                final imageUrl = _selectedImage != null
-                                    ? await _uploadImage(
-                                        searchResult!['id'],
-                                        searchResult!['timeOfEntry']
-                                            .split(' ')[0])
-                                    : searchResult!['imageUrl'];
-                                _updateVisitor(imageUrl!);
-                              }
+                              final imageUrl = _selectedImage != null
+                                  ? await _uploadImage(
+                                      searchResult!['id'],
+                                      searchResult!['timeOfEntry']
+                                          .split(' ')[0],
+                                    )
+                                  : searchResult!['imageUrl'];
+                              await _updateVisitor(imageUrl!);
                               setState(() {
-                                isEditing = !isEditing;
+                                searchResult!['imageUrl'] = imageUrl;
                               });
+                              Navigator.of(context).pop(); // Close dialog
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  isEditing ? Colors.green : Colors.blue,
-                            ),
-                            child: Text(
-                              isEditing ? 'Save' : 'Edit',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => _showDeleteConfirmation(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
+                              backgroundColor: Colors.green,
                             ),
                             child: const Text(
-                              'Delete',
+                              'Save',
                               style: TextStyle(color: Colors.white),
                             ),
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  Positioned(
+                    right: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.red,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           },
@@ -557,6 +577,49 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                 ),
               ),
             ),
+    );
+  }
+}
+
+class FullScreenImage extends StatelessWidget {
+  final String imageUrl;
+
+  const FullScreenImage({Key? key, required this.imageUrl}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(
+            child: InteractiveViewer(
+              child: Image.network(imageUrl, fit: BoxFit.contain),
+            ),
+          ),
+          Positioned(
+            top: 40, // Adjust to position correctly on your screen
+            right: 20,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.of(context).pop();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.red.withOpacity(0.8),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
