@@ -527,55 +527,85 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          ? const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            )
           : Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const Text(
                         'Search Visitor by ID',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
-                          controller: searchIdController, label: 'ID Number'),
+                        controller: searchIdController,
+                        label: 'ID Number',
+                      ),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _searchVisitor,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white, // White background
+                          foregroundColor: Colors.black, // Black text
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 24),
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                         child: const Text('Search'),
                       ),
                       const SizedBox(height: 32),
                       const Text(
                         'Add Visitor',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
-                          controller: idController, label: 'ID Number'),
+                        controller: idController,
+                        label: 'ID Number',
+                      ),
                       const SizedBox(height: 16),
                       _buildTextField(
-                          controller: firstNameController, label: 'First Name'),
+                        controller: firstNameController,
+                        label: 'First Name',
+                      ),
                       const SizedBox(height: 16),
                       _buildTextField(
-                          controller: lastNameController, label: 'Last Name'),
+                        controller: lastNameController,
+                        label: 'Last Name',
+                      ),
                       const SizedBox(height: 16),
                       _buildTextField(
-                          controller: notesController, label: 'Notes'),
+                        controller: notesController,
+                        label: 'Notes',
+                      ),
                       const SizedBox(height: 16),
                       _buildTextField(
-                          controller: cashierController, label: 'Cashier Name'),
+                        controller: cashierController,
+                        label: 'Cashier Name',
+                      ),
                       const SizedBox(height: 16),
                       if (_selectedImage != null)
                         Image.file(
@@ -584,14 +614,39 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                           width: 100,
                           fit: BoxFit.cover,
                         ),
-                      TextButton.icon(
-                        onPressed: _pickImage,
-                        icon: const Icon(Icons.camera_alt, color: Colors.white),
-                        label: const Text('Take Picture'),
-                      ),
                       const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: _pickImage,
+                        icon: const Icon(Icons.camera_alt, color: Colors.black),
+                        label: const Text(
+                          'Take Picture',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 24),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: _addVisitor,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white, // White background
+                          foregroundColor: Colors.black, // Black text
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 24),
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                         child: const Text('Add Visitor'),
                       ),
                     ],
