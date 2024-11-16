@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -25,16 +26,67 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        // Authenticate the user
+        UserCredential userCredential =
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: usernameController.text.trim(),
           password: passwordController.text.trim(),
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login successful!')),
-        );
-        // Navigate to the home page
-        Navigator.pushReplacementNamed(context, '/home');
+
+        // Get the current user ID
+        String userId = userCredential.user!.uid;
+
+        // Reference to the user's data in Realtime Database
+        DatabaseReference userRef =
+            FirebaseDatabase.instance.ref("users/$userId");
+
+        // Check the user's attributes
+        userRef.once().then((snapshot) {
+          if (snapshot.snapshot.exists) {
+            Map<String, dynamic> data =
+                Map<String, dynamic>.from(snapshot.snapshot.value as Map);
+
+            // Safely check for 'admin' attribute
+            bool isAdmin = data['admin'] ??
+                false; // Default to false if 'admin' is missing
+            bool isActivated = data['activated'] ??
+                false; // Default to false if 'activated' is missing
+
+            if (isActivated) {
+              if (isAdmin) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Welcome, Admin!')),
+                );
+                // Navigate to admin dashboard
+                Navigator.pushReplacementNamed(context, '/admin');
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Login successful!')),
+                );
+                // Navigate to the standard home page
+                Navigator.pushReplacementNamed(context, '/home');
+              }
+            } else {
+              // If not activated, show an error message
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text(
+                        'Your account is not activated. Please contact the administrator.')),
+              );
+              FirebaseAuth.instance.signOut(); // Sign out the user
+            }
+          } else {
+            // If no user data exists in the database
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text(
+                      'User data not found. Please contact the administrator.')),
+            );
+            FirebaseAuth.instance.signOut(); // Sign out the user
+          }
+        });
       } on FirebaseAuthException catch (e) {
+        // Handle authentication errors
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message ?? 'Login failed')),
         );
@@ -126,10 +178,24 @@ class _LoginPageState extends State<LoginPage> {
               onPressed: () async {
                 if (registerFormKey.currentState!.validate()) {
                   try {
-                    await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                    // Register the user with Firebase Authentication
+                    UserCredential userCredential = await FirebaseAuth.instance
+                        .createUserWithEmailAndPassword(
                       email: registerEmailController.text.trim(),
                       password: registerPasswordController.text.trim(),
                     );
+
+                    // Get the user's unique ID
+                    String userId = userCredential.user!.uid;
+
+                    // Save the user data to Firebase Realtime Database
+                    DatabaseReference userRef =
+                        FirebaseDatabase.instance.ref("users/$userId");
+                    await userRef.set({
+                      "email": registerEmailController.text.trim(),
+                      "activated": false, // Default activated status
+                    });
+
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Registration successful!')),
