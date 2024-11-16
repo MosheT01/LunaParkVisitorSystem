@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 class VisitorManagementPage extends StatefulWidget {
@@ -24,6 +25,11 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
 
   File? _selectedImage;
   bool isLoading = false;
+
+  // For search
+  final TextEditingController searchIdController = TextEditingController();
+  Map<String, dynamic>? searchResult;
+  String? searchKey;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -64,20 +70,14 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
     }
   }
 
-  Future<String?> _uploadImage(String visitorId, DateTime date) async {
+  Future<String?> _uploadImage(String visitorId, String dateString) async {
     if (_selectedImage == null) return null;
 
-    // Format the date to include only yyyy-MM-dd
-    final dateString =
-        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-
-    // Save the image in the folder named by the formatted date
     final storageRef = FirebaseStorage.instance
         .ref()
         .child('visitor_images/$dateString/$visitorId.jpg');
 
     final uploadTask = storageRef.putFile(_selectedImage!);
-
     final snapshot = await uploadTask.whenComplete(() => {});
     return await snapshot.ref.getDownloadURL();
   }
@@ -97,7 +97,11 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
 
     final visitorId = idController.text.trim();
     final today = DateTime.now();
-    final todayString = '${today.year}-${today.month}-${today.day}';
+    final todayString =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    // Format timeOfEntry as YYYY-MM-DD HH:MM
+    final formattedTimeOfEntry = DateFormat('yyyy-MM-dd HH:mm').format(today);
 
     setState(() {
       isLoading = true;
@@ -116,7 +120,7 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
               content: Text('Visitor with this ID already exists for today')),
         );
       } else {
-        final imageUrl = await _uploadImage(visitorId, today);
+        final imageUrl = await _uploadImage(visitorId, todayString);
         if (imageUrl == null) {
           throw Exception('Failed to upload image');
         }
@@ -127,7 +131,7 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
           'lastName': lastNameController.text.trim(),
           'notes': notesController.text.trim(),
           'cashier': cashierController.text.trim(),
-          'timeOfEntry': DateTime.now().toIso8601String(),
+          'timeOfEntry': formattedTimeOfEntry, // Human-readable format
           'imageUrl': imageUrl,
         });
 
@@ -147,6 +151,314 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
         isLoading = false;
       });
     }
+  }
+
+  Future<void> _searchVisitor() async {
+    final searchId = searchIdController.text.trim();
+    final today = DateTime.now();
+    final todayString =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    if (searchId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please provide the ID')),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final snapshot = await _visitorsRef
+          .child(todayString)
+          .orderByChild('id')
+          .equalTo(searchId)
+          .once();
+
+      if (snapshot.snapshot.value != null) {
+        final data = Map<String, dynamic>.from(
+          (snapshot.snapshot.value as Map<Object?, Object?>),
+        );
+        final key = data.keys.first;
+        setState(() {
+          searchKey = key;
+          searchResult = Map<String, dynamic>.from(data[key]);
+        });
+
+        _showEditDialog(context); // Show edit dialog
+      } else {
+        setState(() {
+          searchResult = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No visitor found for the given ID')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+      debugPrint('Error during search: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateVisitor(String imageUrl) async {
+    if (searchKey == null || searchResult == null) return;
+
+    final today = DateTime.now();
+    final formattedTimeOfEntry = DateFormat('yyyy-MM-dd HH:mm').format(today);
+
+    final todayString =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    try {
+      await _visitorsRef.child(todayString).child(searchKey!).update({
+        'firstName': firstNameController.text.trim(),
+        'lastName': lastNameController.text.trim(),
+        'notes': notesController.text.trim(),
+        'cashier': cashierController.text.trim(),
+        'imageUrl': imageUrl,
+        'timeOfEntry': formattedTimeOfEntry, // Human-readable format
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Visitor updated successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating visitor: $e')),
+      );
+    }
+  }
+
+  void _showEditDialog(BuildContext context) {
+    if (searchResult == null) return;
+
+    firstNameController.text = searchResult!['firstName'] ?? '';
+    lastNameController.text = searchResult!['lastName'] ?? '';
+    notesController.text = searchResult!['notes'] ?? '';
+    cashierController.text = searchResult!['cashier'] ?? '';
+
+    bool isEditing = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (searchResult?['imageUrl'] != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16.0),
+                          height: 150,
+                          width: 150,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              searchResult!['imageUrl'],
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
+                        controller: firstNameController,
+                        label: 'First Name',
+                        enabled: isEditing,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: lastNameController,
+                        label: 'Last Name',
+                        enabled: isEditing,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: notesController,
+                        label: 'Notes',
+                        enabled: isEditing,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: cashierController,
+                        label: 'Cashier Name',
+                        enabled: isEditing,
+                      ),
+                      const SizedBox(height: 16),
+                      if (isEditing)
+                        TextButton.icon(
+                          onPressed: _pickImage,
+                          icon:
+                              const Icon(Icons.camera_alt, color: Colors.white),
+                          label: const Text(
+                            'Change Picture',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () async {
+                              if (isEditing) {
+                                final imageUrl = _selectedImage != null
+                                    ? await _uploadImage(
+                                        searchResult!['id'],
+                                        searchResult!['timeOfEntry']
+                                            .split(' ')[0])
+                                    : searchResult!['imageUrl'];
+                                _updateVisitor(imageUrl!);
+                              }
+                              setState(() {
+                                isEditing = !isEditing;
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  isEditing ? Colors.green : Colors.blue,
+                            ),
+                            child: Text(
+                              isEditing ? 'Save' : 'Edit',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => _showDeleteConfirmation(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            child: const Text(
+                              'Delete',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.black,
+          title: const Text(
+            'Confirm Deletion',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: const Text(
+            'Are you sure you want to delete this visitor? This action cannot be undone.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                await _deleteVisitor();
+                Navigator.of(context).pop(); // Close confirmation dialog
+                Navigator.of(context).pop(); // Close edit dialog
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteVisitor() async {
+    if (searchKey == null || searchResult == null) return;
+
+    final today = DateTime.now();
+    final todayString =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    try {
+      // Delete image from Firebase Storage
+      if (searchResult?['imageUrl'] != null) {
+        final storageRef =
+            FirebaseStorage.instance.refFromURL(searchResult!['imageUrl']);
+        await storageRef.delete();
+      }
+
+      // Delete entry from Firebase Realtime Database
+      await _visitorsRef.child(todayString).child(searchKey!).remove();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Visitor deleted successfully')),
+      );
+
+      setState(() {
+        searchResult = null;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting visitor: $e')),
+      );
+    }
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    bool enabled = true,
+  }) {
+    return TextField(
+      controller: controller,
+      enabled: enabled,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white),
+        filled: true,
+        fillColor: enabled ? Colors.white12 : Colors.black12,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+      ),
+    );
   }
 
   void _clearForm() {
@@ -183,7 +495,24 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Add Visitor Details',
+                        'Search Visitor by ID',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
+                          controller: searchIdController, label: 'ID Number'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _searchVisitor,
+                        child: const Text('Search'),
+                      ),
+                      const SizedBox(height: 32),
+                      const Text(
+                        'Add Visitor',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -207,77 +536,27 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                           controller: cashierController, label: 'Cashier Name'),
                       const SizedBox(height: 16),
                       if (_selectedImage != null)
-                        Container(
+                        Image.file(
+                          _selectedImage!,
                           height: 100,
                           width: 100,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              _selectedImage!,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                          fit: BoxFit.cover,
                         ),
-                      const SizedBox(height: 16),
                       TextButton.icon(
                         onPressed: _pickImage,
                         icon: const Icon(Icons.camera_alt, color: Colors.white),
-                        label: const Text(
-                          'Take Picture',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                        label: const Text('Take Picture'),
                       ),
                       const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: _addVisitor,
-                          child: const Text(
-                            'Add Visitor',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                      ElevatedButton(
+                        onPressed: _addVisitor,
+                        child: const Text('Add Visitor'),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-    );
-  }
-
-  Widget _buildTextField(
-      {required TextEditingController controller, required String label}) {
-    return TextField(
-      controller: controller,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white),
-        filled: true,
-        fillColor: Colors.white12,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
-      ),
     );
   }
 }
