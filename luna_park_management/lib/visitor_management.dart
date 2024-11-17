@@ -582,6 +582,11 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                         child: const Text('Search'),
                       ),
                       const SizedBox(height: 32),
+                      const Divider(
+                        color: Colors.white,
+                        thickness: 1,
+                        height: 40,
+                      ),
                       const Text(
                         'Add Visitor',
                         textAlign: TextAlign.center,
