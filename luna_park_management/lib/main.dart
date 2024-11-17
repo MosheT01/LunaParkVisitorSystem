@@ -5,15 +5,24 @@ import 'package:luna_park_management/admin/admin_dashboard.dart';
 import 'package:luna_park_management/admin/manage_users.dart';
 import 'package:luna_park_management/home_page.dart';
 import 'package:luna_park_management/login_page.dart';
-import 'package:luna_park_management/visitor_management.dart'; // Import the VisitorManagementPage
+import 'package:luna_park_management/visitor_management.dart'; // Import VisitorManagementPage
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
 
-  // Set the correct database URL
-  FirebaseDatabase.instance.databaseURL =
-      'https://lunaparkmanagement-a8a9c-default-rtdb.europe-west1.firebasedatabase.app';
+  // Initialize Firebase with FirebaseOptions for Web
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: "AIzaSyAK_OuzbCThVsOnCCSWACkdf5KJcQ7csHo",
+      authDomain: "lunaparkmanagement-a8a9c.firebaseapp.com",
+      databaseURL:
+          "https://lunaparkmanagement-a8a9c-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "lunaparkmanagement-a8a9c",
+      storageBucket: "lunaparkmanagement-a8a9c.firebasestorage.app",
+      messagingSenderId: "916894176673",
+      appId: "1:916894176673:web:6435e39ea1a6694df3e7e0",
+    ),
+  );
 
   runApp(const MyApp());
 }
