@@ -319,7 +319,7 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                             label: 'Cashier Name',
                           ),
                           const SizedBox(height: 16),
-                          TextButton.icon(
+                          ElevatedButton.icon(
                             onPressed: () async {
                               await _pickImage();
                               if (_selectedImage != null) {
@@ -336,10 +336,18 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                               }
                             },
                             icon: const Icon(Icons.camera_alt,
-                                color: Colors.white),
+                                color: Colors.black),
                             label: const Text(
                               'Change Picture',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 24),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -363,6 +371,7 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
+                                  minimumSize: const Size(120, 40),
                                 ),
                                 child: const Text(
                                   'Save',
@@ -374,6 +383,7 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                                     _showDeleteConfirmation(context),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
+                                  minimumSize: const Size(120, 40),
                                 ),
                                 child: const Text(
                                   'Delete',
@@ -624,8 +634,13 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(
                               vertical: 12, horizontal: 24),
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -635,8 +650,8 @@ class _VisitorManagementPageState extends State<VisitorManagementPage> {
                       ElevatedButton(
                         onPressed: _addVisitor,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white, // White background
-                          foregroundColor: Colors.black, // Black text
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(
                               vertical: 12, horizontal: 24),
                           textStyle: const TextStyle(

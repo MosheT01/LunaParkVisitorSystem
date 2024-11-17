@@ -40,24 +40,26 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/visitorManagement');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white, // White background
-                  foregroundColor: Colors.black, // Black text
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+              SizedBox(
+                width: 200, // Fixed width for uniform size
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/visitorManagement');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white, // White background
+                    foregroundColor: Colors.black, // Black text
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  child: const Text('Visitor Management'),
                 ),
-                child: const Text('Visitor Management'),
               ),
             ],
           ),
